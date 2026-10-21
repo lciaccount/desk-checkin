@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a78d6">
+<title>工位动作打卡</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --line:#e3e6ea;
+    --fg:#17181a; --muted:#6b7280; --dim:#9aa1ab;
+    --accent:#2a78d6; --accent-soft:#e8f1fc;
+    --ok:#1baf7a; --warn:#eb6834;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#121316; --card:#1c1e22; --line:#2c2f35;
+      --fg:#e9eaec; --muted:#9aa1ab; --dim:#6b7280;
+      --accent:#3987e5; --accent-soft:#16243a;
+      --ok:#199e70; --warn:#d95926;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
+         "Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 28px);
+    max-width:560px; margin:0 auto;
+  }
+
+  /* ---------- header ---------- */
+  header{margin-bottom:22px}
+  .date{font-size:13px;color:var(--muted);letter-spacing:.02em}
+  h1{font-size:19px;font-weight:650;margin:4px 0 18px}
+  .today{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 20px; display:flex; align-items:baseline; gap:10px;
+  }
+  .today .num{font-size:40px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .today .of{font-size:15px;color:var(--muted)}
+  .today .done{margin-left:auto;font-size:14px;color:var(--ok);font-weight:600}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:14px}
+  .bar > i{display:block;height:100%;background:var(--accent);border-radius:99px;
+           transition:width .25s ease}
+
+  /* ---------- exercise cards ---------- */
+  .list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .ex{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; display:flex; align-items:center; gap:14px;
+  }
+  .ex.hit{border-color:var(--ok)}
+  .idx{
+    width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+    background:var(--accent-soft); color:var(--accent);
+    display:grid;place-items:center;font-size:13px;font-weight:700;
+  }
+  .ex.hit .idx{background:var(--ok);color:#fff}
+  .meta{flex:1;min-width:0}
+  .name{display:block;font-weight:600;font-size:15px}
+  .spec{display:block;font-size:13px;color:var(--muted);margin-top:1px}
+  .count{
+    font-variant-numeric:tabular-nums; font-size:15px; color:var(--muted);
+    min-width:44px; text-align:right;
+  }
+  .count b{color:var(--fg);font-size:17px}
+  .btns{display:flex;gap:8px}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  .plus{
+    width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;
+    font-size:22px;font-weight:600;display:grid;place-items:center;
+    transition:transform .08s ease, filter .12s ease;
+  }
+  .plus:active{transform:scale(.92);filter:brightness(.92)}
+  .minus{
+    width:34px;height:44px;border-radius:12px;border:1px solid var(--line);
+    color:var(--dim);font-size:18px;display:grid;place-items:center;
+  }
+  .minus:active{background:var(--line)}
+
+  /* ---------- 7 day ---------- */
+  .sect{margin-top:26px}
+  .sect h2{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 10px;
+           letter-spacing:.04em;text-transform:uppercase}
+  .week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .day{background:var(--card);border:1px solid var(--line);border-radius:10px;
+       padding:8px 4px;text-align:center}
+  .day .d{font-size:11px;color:var(--dim)}
+  .day .v{font-size:15px;font-weight:650;margin-top:4px;font-variant-numeric:tabular-nums}
+  .day.met{border-color:var(--ok)}
+  .day.met .v{color:var(--ok)}
+  .day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+
+  /* ---------- footer / data ---------- */
+  .data{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .data button{
+    padding:10px 14px;border:1px solid var(--line);border-radius:10px;
+    background:var(--card);font-size:14px;color:var(--fg);
+  }
+  .data button:active{background:var(--line)}
+  .data button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  details{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  summary{font-size:13px;color:var(--muted);cursor:pointer;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";color:var(--dim)}
+  details[open] summary::before{content:"▾ "}
+  .set{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;align-items:center;justify-content:space-between;font-size:14px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{padding:7px 14px;font-size:14px;color:var(--muted)}
+  .seg button.on{background:var(--accent);color:#fff}
+  .note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px}
+  .warn{color:var(--warn);font-weight:600}
+  .toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+    background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:99px;
+    font-size:14px;opacity:0;pointer-events:none;transition:.22s ease;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="date" id="date"></div>
+  <h1>工位动作</h1>
+
+  <div class="today">
+    <span class="num" id="rounds">0</span>
+    <span class="of">/ <span id="target">3</span> 轮</span>
+    <span class="done" id="doneMsg"></span>
+  </div>
+  <div class="bar"><i id="barFill" style="width:0%"></i></div>
+</header>
+
+<main>
+  <div class="list" id="list"></div>
+
+  <section class="sect">
+    <h2>最近 7 天</h2>
+    <div class="week" id="week"></div>
+  </section>
+
+  <section class="sect">
+    <h2>数据</h2>
+    <div class="data">
+      <button class="primary" id="csv">导出 CSV</button>
+      <button id="json">导出 JSON</button>
+      <button id="importBtn">导入 JSON</button>
+      <button id="resetDay">清空今天</button>
+    </div>
+    <input type="file" id="file" accept="application/json,.json" hidden>
+  </section>
+
+  <details>
+    <summary>设置与说明</summary>
+    <div class="set">
+      <div class="row">
+        <span>每日目标</span>
+        <div class="seg" id="segTarget">
+          <button data-v="3">3 轮</button>
+          <button data-v="6">6 轮</button>
+        </div>
+      </div>
+      <div class="row">
+        <span>显示进阶动作</span>
+        <div class="seg" id="segAdv">
+          <button data-v="0">关</button>
+          <button data-v="1">开</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">
+      <b>第 1 周（10-21 起）</b>：每天 3 轮，只做前 4 个动作。<br>
+      <b>第 2 周</b>：6 轮。<b>第 3 周</b>：打开进阶，加「下巴回收」和「握力等长」。<br><br>
+      一轮 = 四个动作连着做，约 90 秒，不起身、不出汗。<br>
+      <span class="warn">全程正常呼吸，绝对不要憋气</span>（血压正常高值 + 母系两代高血压）。<br><br>
+      数据只存在这台设备的浏览器里，不上传任何服务器。<br>
+      <b>换设备或清理浏览器前，先导出 JSON。</b>
+    </p>
+  </details>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const KEY = "desk-checkin-v1";
+  const EX = [
+    {id:"ankle",   name:"踝泵",         spec:"上勾下压 ×15"},
+    {id:"glute",   name:"臀肌收紧",     spec:"5 秒 ×3"},
+    {id:"core",    name:"收腹坐直",     spec:"5 秒 ×5"},
+    {id:"scapula", name:"肩胛后缩下沉", spec:"5 秒 ×5"},
+    {id:"chin",    name:"下巴回收",     spec:"5 秒 ×5",   adv:true},
+    {id:"grip",    name:"握力等长",     spec:"10 秒 ×3",  adv:true}
+  ];
+  const WD = ["日","一","二","三","四","五","六"];
+
+  /* ---------- state ---------- */
+  let mem = null;                       // localStorage 不可用时的兜底
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(raw) return normalize(JSON.parse(raw));
+    }catch(e){ /* 隐私模式或损坏 */ }
+    return normalize({});
+  }
+  function normalize(s){
+    s = s && typeof s === "object" ? s : {};
+    return {
+      v: 1,
+      target: s.target === 6 ? 6 : 3,
+      adv: !!s.adv,
+      days: (s.days && typeof s.days === "object") ? s.days : {}
+    };
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ mem = state; }
+  }
+  let state = mem || load();
+
+  /* ---------- date ---------- */
+  function todayKey(d){
+    d = d || new Date();
+    const p = n => String(n).padStart(2,"0");
+    return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
+  }
+  function dayRec(k){
+    if(!state.days[k]) state.days[k] = {};
+    return state.days[k];
+  }
+  function activeEx(){ return EX.filter(e => state.adv || !e.adv); }
+
+  /* 完成轮数 = 所有当前动作的最小次数（少做一个就不算完整一轮） */
+  function roundsOf(k){
+    const rec = state.days[k] || {};
+    const list = activeEx();
+    if(!list.length) return 0;
+    return Math.min.apply(null, list.map(e => rec[e.id] || 0));
+  }
+
+  /* ---------- render ---------- */
+  const $ = id => document.getElementById(id);
+  const cards = Object.create(null);   // id -> { el, idx, count }
+  let builtFor = "";                   // 卡片是在什么配置下建的
+
+  /* 只在配置变化时重建 DOM；点按钮时绝不重建，避免连点丢事件 */
+  function build(){
+    const sig = state.target + "|" + (state.adv ? 1 : 0);
+    if(sig === builtFor) return;
+    builtFor = sig;
+
+    const list = $("list");
+    list.innerHTML = "";
+    for(const k in cards) delete cards[k];
+
+    activeEx().forEach((e, i) => {
+      const el = document.createElement("div");
+      el.className = "ex";
+      el.innerHTML =
+        '<span class="idx"></span>' +
+        '<span class="meta">' +
+          '<span class="name"></span>' +
+          '<span class="spec"></span>' +
+        '</span>' +
+        '<span class="count"></span>' +
+        '<span class="btns">' +
+          '<button class="minus" aria-label="减一">−</button>' +
+          '<button class="plus" aria-label="加一">+</button>' +
+        '</span>';
+      el.querySelector(".name").textContent = e.name;
+      el.querySelector(".spec").textContent = e.spec;
+      el.querySelector(".plus").addEventListener("click", () => bump(e.id, +1));
+      el.querySelector(".minus").addEventListener("click", () => bump(e.id, -1));
+      list.appendChild(el);
+      cards[e.id] = {
+        el,
+        idx:   el.querySelector(".idx"),
+        count: el.querySelector(".count")
+      };
+    });
+  }
+
+  function refresh(){
+    const k = todayKey();
+    const d = new Date();
+    $("date").textContent = k + " · 周" + WD[d.getDay()];
+    $("target").textContent = state.target;
+
+    const rec = state.days[k] || {};
+    const rounds = roundsOf(k);
+    const shown = Math.min(rounds, state.target);
+
+    $("rounds").textContent = shown;
+    $("barFill").style.width = Math.min(100, rounds / state.target * 100) + "%";
+    $("doneMsg").textContent = rounds >= state.target ? "完成 ✓" : "";
+
+    activeEx().forEach((e, i) => {
+      const c = cards[e.id]; if(!c) return;
+      const n = rec[e.id] || 0;
+      const hit = n >= state.target;
+      c.el.classList.toggle("hit", hit);
+      c.idx.textContent = hit ? "✓" : (i + 1);
+      c.count.innerHTML = "<b>" + n + "</b> / " + state.target;
+    });
+
+    const week = $("week");
+    week.innerHTML = "";
+    for(let i = 6; i >= 0; i--){
+      const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i);
+      const r = roundsOf(todayKey(dt));
+      const met = r >= state.target;
+      const el = document.createElement("div");
+      el.className = "day" + (met ? " met" : "") + (i === 0 ? " today" : "");
+      el.innerHTML = '<div class="d">周' + WD[dt.getDay()] + '</div>' +
+                     '<div class="v">' + (r || "·") + '</div>';
+      week.appendChild(el);
+    }
+
+    document.querySelectorAll("#segTarget button").forEach(b =>
+      b.classList.toggle("on", +b.dataset.v === state.target));
+    document.querySelectorAll("#segAdv button").forEach(b =>
+      b.classList.toggle("on", +b.dataset.v === (state.adv ? 1 : 0)));
+  }
+
+  function render(){ build(); refresh(); }
+
+  function bump(id, delta){
+    const k = todayKey();
+    const rec = dayRec(k);
+    const v = Math.max(0, (rec[id] || 0) + delta);
+    rec[id] = v;
+    if(v === 0) delete rec[id];
+    save();
+    refresh();
+    if(delta > 0 && roundsOf(k) >= state.target && !bump._shown){
+      bump._shown = true; toast("今天目标完成 ✓");
+    }
+  }
+
+  /* ---------- toast ---------- */
+  let toastTimer;
+  function toast(msg){
+    const t = $("toast");
+    t.textContent = msg; t.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("on"), 1800);
+  }
+
+  /* ---------- export ---------- */
+  function download(name, text, type){
+    const blob = new Blob([text], {type: type || "text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  }
+
+  $("csv").onclick = function(){
+    const keys = Object.keys(state.days).sort();
+    const head = ["date"].concat(EX.map(e => e.name)).concat(["完成轮数"]);
+    const lines = [head.join(",")];
+    keys.forEach(k => {
+      const rec = state.days[k];
+      if(!rec || !Object.keys(rec).length) return;
+      lines.push([k]
+        .concat(EX.map(e => rec[e.id] || 0))
+        .concat([roundsOf(k)])
+        .join(","));
+    });
+    if(lines.length === 1){ toast("还没有数据"); return; }
+    download("工位动作_" + todayKey() + ".csv", "﻿" + lines.join("\n"),
+             "text/csv;charset=utf-8");
+  };
+
+  $("json").onclick = function(){
+    download("工位动作_" + todayKey() + ".json",
+             JSON.stringify(state, null, 2), "application/json");
+  };
+
+  $("importBtn").onclick = function(){ $("file").click(); };
+  $("file").onchange = function(ev){
+    const f = ev.target.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = function(){
+      try{
+        const data = normalize(JSON.parse(r.result));
+        const cur = Object.keys(state.days).length;
+        const inc = Object.keys(data.days).length;
+        if(cur && !confirm("导入会覆盖当前 " + cur + " 天的记录（文件里有 " + inc + " 天）。继续？")) return;
+        state = data; save(); render(); toast("已导入 " + inc + " 天");
+      }catch(e){
+        toast("文件格式不对");
+      }
+    };
+    r.readAsText(f);
+    ev.target.value = "";
+  };
+
+  $("resetDay").onclick = function(){
+    if(!confirm("清空今天的记录？")) return;
+    delete state.days[todayKey()];
+    save(); render(); toast("今天已清空");
+  };
+
+  /* ---------- settings ---------- */
+  $("segTarget").onclick = function(ev){
+    const b = ev.target.closest("button"); if(!b) return;
+    state.target = +b.dataset.v; save(); render();
+  };
+  $("segAdv").onclick = function(ev){
+    const b = ev.target.closest("button"); if(!b) return;
+    state.adv = b.dataset.v === "1"; save(); render();
+  };
+
+  /* ---------- boot ---------- */
+  render();
+  // 跨天自动刷新
+  let day = todayKey();
+  setInterval(function(){
+    const now = todayKey();
+    if(now !== day){ day = now; bump._shown = false; render(); }
+  }, 30000);
+})();
+</script>
+</body>
+</html>
