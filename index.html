@@ -10,7 +10,7 @@
     --bg:#f6f7f9; --card:#ffffff; --line:#e3e6ea;
     --fg:#17181a; --muted:#6b7280; --dim:#9aa1ab;
     --accent:#2a78d6; --accent-soft:#e8f1fc;
-    --ok:#1baf7a; --warn:#eb6834;
+    --ok:#1baf7a; --warn:#eb6834; --water:#0f9bb5;
     --radius:14px;
   }
   @media (prefers-color-scheme: dark){
@@ -18,7 +18,7 @@
       --bg:#121316; --card:#1c1e22; --line:#2c2f35;
       --fg:#e9eaec; --muted:#9aa1ab; --dim:#6b7280;
       --accent:#3987e5; --accent-soft:#16243a;
-      --ok:#199e70; --warn:#d95926;
+      --ok:#199e70; --warn:#d95926; --water:#2aa6bd;
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -31,7 +31,6 @@
     max-width:560px; margin:0 auto;
   }
 
-  /* ---------- header ---------- */
   header{margin-bottom:22px}
   .date{font-size:13px;color:var(--muted);letter-spacing:.02em}
   h1{font-size:19px;font-weight:650;margin:4px 0 18px}
@@ -46,7 +45,6 @@
   .bar > i{display:block;height:100%;background:var(--accent);border-radius:99px;
            transition:width .25s ease}
 
-  /* ---------- exercise cards ---------- */
   .list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .ex{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
@@ -67,7 +65,7 @@
     min-width:44px; text-align:right;
   }
   .count b{color:var(--fg);font-size:17px}
-  .btns{display:flex;gap:8px}
+  .btns{display:flex;gap:8px;align-items:center}
   button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
   .plus{
     width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;
@@ -81,7 +79,22 @@
   }
   .minus:active{background:var(--line)}
 
-  /* ---------- 7 day ---------- */
+  /* 另外两件 */
+  .ex.extra .idx{background:var(--accent-soft)}
+  .ex.water .idx{background:rgba(15,155,181,.14);color:var(--water)}
+  .ex.water.hit .idx{background:var(--water);color:#fff}
+  .ex.water.hit{border-color:var(--water)}
+  input[type=number]{
+    font:inherit;font-variant-numeric:tabular-nums;
+    width:58px;padding:9px 8px;text-align:center;
+    border:1px solid var(--line);border-radius:10px;
+    background:var(--bg);color:var(--fg);
+    -moz-appearance:textfield;
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .unit{font-size:13px;color:var(--dim);margin-right:-2px}
+
   .sect{margin-top:26px}
   .sect h2{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 10px;
            letter-spacing:.04em;text-transform:uppercase}
@@ -94,7 +107,6 @@
   .day.met .v{color:var(--ok)}
   .day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 
-  /* ---------- footer / data ---------- */
   .data{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .data button{
     padding:10px 14px;border:1px solid var(--line);border-radius:10px;
@@ -109,10 +121,19 @@
   summary::before{content:"▸ ";color:var(--dim)}
   details[open] summary::before{content:"▾ "}
   .set{margin-top:12px;display:flex;flex-direction:column;gap:10px}
-  .row{display:flex;align-items:center;justify-content:space-between;font-size:14px}
+  .row{display:flex;align-items:center;justify-content:space-between;font-size:14px;gap:10px}
   .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
   .seg button{padding:7px 14px;font-size:14px;color:var(--muted)}
   .seg button.on{background:var(--accent);color:#fff}
+  .cfg{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .cfg .row{font-size:14px}
+  .cfg .lbl{color:var(--muted)}
+  .cfg .fields{display:flex;align-items:center;gap:6px}
+  .cfg input{width:52px;padding:7px 6px}
+  .ghost{
+    margin-top:14px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;
+    font-size:14px;color:var(--muted);background:var(--card);align-self:flex-start;
+  }
   .note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px}
   .warn{color:var(--warn);font-weight:600}
   .toast{
@@ -141,6 +162,11 @@
   <div class="list" id="list"></div>
 
   <section class="sect">
+    <h2>另外两件</h2>
+    <div class="list" id="extras" style="margin-top:0"></div>
+  </section>
+
+  <section class="sect">
     <h2>最近 7 天</h2>
     <div class="week" id="week"></div>
   </section>
@@ -158,6 +184,7 @@
 
   <details>
     <summary>设置与说明</summary>
+
     <div class="set">
       <div class="row">
         <span>每日目标</span>
@@ -173,12 +200,22 @@
           <button data-v="1">开</button>
         </div>
       </div>
+      <div class="row">
+        <span>接水目标</span>
+        <span class="fields"><input type="number" id="waterTarget" min="1" max="20"><span class="unit">次/天</span></span>
+      </div>
     </div>
+
+    <div class="cfg" id="cfg"></div>
+    <button class="ghost" id="resetSpec">恢复默认参数</button>
+
     <p class="note">
-      <b>第 1 周（10-21 起）</b>：每天 3 轮，只做前 4 个动作。<br>
-      <b>第 2 周</b>：6 轮。<b>第 3 周</b>：打开进阶，加「下巴回收」和「握力等长」。<br><br>
+      <b>第 1 周</b>：每天 3 轮，只做前 4 个动作。<b>第 2 周</b>：6 轮。
+      <b>第 3 周</b>：打开进阶，加「下巴回收」和「握力等长」。<br><br>
       一轮 = 四个动作连着做，约 90 秒，不起身、不出汗。<br>
       <span class="warn">全程正常呼吸，绝对不要憋气。</span>等长收缩时屏气会使血压瞬间升高。<br><br>
+      接水：每次接水点一下。它也是做一轮动作的触发点。<br>
+      散步：填分钟数再点 <b>+</b>；点错了用 <b>−</b> 撤掉最后一次。<br><br>
       数据只存在这台设备的浏览器里，不上传任何服务器。<br>
       <b>换设备或清理浏览器前，先导出 JSON。</b>
     </p>
@@ -192,41 +229,68 @@
   "use strict";
 
   const KEY = "desk-checkin-v1";
-  const EX = [
-    {id:"ankle",   name:"踝泵",         spec:"上勾下压 ×15"},
-    {id:"glute",   name:"臀肌收紧",     spec:"5 秒 ×3"},
-    {id:"core",    name:"收腹坐直",     spec:"5 秒 ×5"},
-    {id:"scapula", name:"肩胛后缩下沉", spec:"5 秒 ×5"},
-    {id:"chin",    name:"下巴回收",     spec:"5 秒 ×5",   adv:true},
-    {id:"grip",    name:"握力等长",     spec:"10 秒 ×3",  adv:true}
-  ];
   const WD = ["日","一","二","三","四","五","六"];
 
+  /* ---------- 动作定义 ----------
+     kind:"reps" 只有次数；kind:"hold" 有（秒 × 次数）
+     dur / reps 是可调参数的默认值                          */
+  const EX = [
+    {id:"ankle",   name:"踝泵",         kind:"reps", verb:"上勾下压", reps:15},
+    {id:"glute",   name:"臀肌收紧",     kind:"hold", dur:5,  reps:3},
+    {id:"core",    name:"收腹坐直",     kind:"hold", dur:5,  reps:5},
+    {id:"scapula", name:"肩胛后缩下沉", kind:"hold", dur:5,  reps:5},
+    {id:"chin",    name:"下巴回收",     kind:"hold", dur:5,  reps:5,  adv:true},
+    {id:"grip",    name:"握力等长",     kind:"hold", dur:10, reps:3,  adv:true}
+  ];
+  const WALK_DEFAULT = 10;
+
+  function defaultSpecs(){
+    const o = {};
+    EX.forEach(e => { o[e.id] = {dur: e.dur, reps: e.reps}; });
+    return o;
+  }
+
   /* ---------- state ---------- */
-  let mem = null;                       // localStorage 不可用时的兜底
+  let mem = null;
+  function normalize(s){
+    s = s && typeof s === "object" ? s : {};
+    const d = defaultSpecs();
+    const specs = {};
+    EX.forEach(e => {
+      const cur = (s.specs && s.specs[e.id]) || {};
+      const dur  = clamp(cur.dur  ?? d[e.id].dur,  1, 120);
+      const reps = clamp(cur.reps ?? d[e.id].reps, 1, 99);
+      specs[e.id] = {dur: (e.kind === "hold" ? dur : null), reps};
+    });
+    return {
+      v: 2,
+      target: s.target === 6 ? 6 : 3,
+      adv: !!s.adv,
+      waterTarget: clamp(s.waterTarget ?? 6, 1, 20),
+      walkDefault: clamp(s.walkDefault ?? WALK_DEFAULT, 1, 180),
+      specs,
+      days: (s.days && typeof s.days === "object") ? s.days : {}
+    };
+  }
+  function clamp(v, lo, hi){
+    v = Math.round(Number(v));
+    if(!isFinite(v)) v = lo;
+    return Math.min(hi, Math.max(lo, v));
+  }
   function load(){
     try{
       const raw = localStorage.getItem(KEY);
       if(raw) return normalize(JSON.parse(raw));
-    }catch(e){ /* 隐私模式或损坏 */ }
+    }catch(e){}
     return normalize({});
-  }
-  function normalize(s){
-    s = s && typeof s === "object" ? s : {};
-    return {
-      v: 1,
-      target: s.target === 6 ? 6 : 3,
-      adv: !!s.adv,
-      days: (s.days && typeof s.days === "object") ? s.days : {}
-    };
   }
   function save(){
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }
     catch(e){ mem = state; }
   }
-  let state = mem || load();
+  let state = load();
 
-  /* ---------- date ---------- */
+  /* ---------- date / record ---------- */
   function todayKey(d){
     d = d || new Date();
     const p = n => String(n).padStart(2,"0");
@@ -238,22 +302,33 @@
   }
   function activeEx(){ return EX.filter(e => state.adv || !e.adv); }
 
-  /* 完成轮数 = 所有当前动作的最小次数（少做一个就不算完整一轮） */
+  /* 完成轮数 = 所有当前动作的最小次数 */
   function roundsOf(k){
     const rec = state.days[k] || {};
     const list = activeEx();
     if(!list.length) return 0;
     return Math.min.apply(null, list.map(e => rec[e.id] || 0));
   }
+  function walksOf(k){
+    const rec = state.days[k] || {};
+    return Array.isArray(rec.walks) ? rec.walks : [];
+  }
+  function walkMin(k){ return walksOf(k).reduce((a,b)=>a+b, 0); }
+
+  /* ---------- 文案 ---------- */
+  function specText(e){
+    const sp = state.specs[e.id];
+    if(e.kind === "reps") return (e.verb || "") + " ×" + sp.reps;
+    return sp.dur + " 秒 ×" + sp.reps;
+  }
 
   /* ---------- render ---------- */
   const $ = id => document.getElementById(id);
-  const cards = Object.create(null);   // id -> { el, idx, count }
-  let builtFor = "";                   // 卡片是在什么配置下建的
+  const cards = Object.create(null);
+  let builtFor = "";
 
-  /* 只在配置变化时重建 DOM；点按钮时绝不重建，避免连点丢事件 */
   function build(){
-    const sig = state.target + "|" + (state.adv ? 1 : 0);
+    const sig = state.target + "|" + (state.adv ? 1 : 0) + "|" + state.waterTarget;
     if(sig === builtFor) return;
     builtFor = sig;
 
@@ -266,26 +341,78 @@
       el.className = "ex";
       el.innerHTML =
         '<span class="idx"></span>' +
-        '<span class="meta">' +
-          '<span class="name"></span>' +
-          '<span class="spec"></span>' +
-        '</span>' +
+        '<span class="meta"><span class="name"></span><span class="spec"></span></span>' +
         '<span class="count"></span>' +
         '<span class="btns">' +
           '<button class="minus" aria-label="减一">−</button>' +
           '<button class="plus" aria-label="加一">+</button>' +
         '</span>';
       el.querySelector(".name").textContent = e.name;
-      el.querySelector(".spec").textContent = e.spec;
       el.querySelector(".plus").addEventListener("click", () => bump(e.id, +1));
       el.querySelector(".minus").addEventListener("click", () => bump(e.id, -1));
       list.appendChild(el);
-      cards[e.id] = {
-        el,
-        idx:   el.querySelector(".idx"),
-        count: el.querySelector(".count")
-      };
+      cards[e.id] = {el, idx: el.querySelector(".idx"),
+                     spec: el.querySelector(".spec"),
+                     count: el.querySelector(".count")};
     });
+
+    buildExtras();
+  }
+
+  function buildExtras(){
+    const box = $("extras");
+    box.innerHTML = "";
+
+    /* 接水 */
+    const w = document.createElement("div");
+    w.className = "ex water";
+    w.innerHTML =
+      '<span class="idx">水</span>' +
+      '<span class="meta"><span class="name">接水</span>' +
+        '<span class="spec"></span></span>' +
+      '<span class="count"></span>' +
+      '<span class="btns">' +
+        '<button class="minus" aria-label="减一">−</button>' +
+        '<button class="plus" aria-label="加一">+</button>' +
+      '</span>';
+    w.querySelector(".plus").addEventListener("click", () => water(+1));
+    w.querySelector(".minus").addEventListener("click", () => water(-1));
+    box.appendChild(w);
+    cards.water = {el: w, spec: w.querySelector(".spec"), count: w.querySelector(".count")};
+
+    /* 散步 */
+    const s = document.createElement("div");
+    s.className = "ex extra";
+    s.innerHTML =
+      '<span class="idx">走</span>' +
+      '<span class="meta"><span class="name">散步</span>' +
+        '<span class="spec"></span></span>' +
+      '<span class="btns">' +
+        '<input type="number" class="mins" inputmode="numeric" min="1" max="180" aria-label="分钟">' +
+        '<span class="unit">分</span>' +
+        '<button class="minus" aria-label="撤销上一次">−</button>' +
+        '<button class="plus" aria-label="记录一次">+</button>' +
+      '</span>';
+    const inp = s.querySelector(".mins");
+    inp.value = state.walkDefault;
+    s.querySelector(".plus").addEventListener("click", () => {
+      const v = clamp(inp.value, 1, 180);
+      inp.value = v;
+      state.walkDefault = v;
+      const rec = dayRec(todayKey());
+      if(!Array.isArray(rec.walks)) rec.walks = [];
+      rec.walks.push(v);
+      save(); refresh(); toast("记下 " + v + " 分钟");
+    });
+    s.querySelector(".minus").addEventListener("click", () => {
+      const rec = dayRec(todayKey());
+      if(!Array.isArray(rec.walks) || !rec.walks.length){ toast("没有可撤销的"); return; }
+      const v = rec.walks.pop();
+      if(!rec.walks.length) delete rec.walks;
+      save(); refresh(); toast("撤销 " + v + " 分钟");
+    });
+    box.appendChild(s);
+    cards.walk = {el: s, spec: s.querySelector(".spec")};
   }
 
   function refresh(){
@@ -308,8 +435,27 @@
       const hit = n >= state.target;
       c.el.classList.toggle("hit", hit);
       c.idx.textContent = hit ? "✓" : (i + 1);
+      c.spec.textContent = specText(e);
       c.count.innerHTML = "<b>" + n + "</b> / " + state.target;
     });
+
+    /* 接水 */
+    const wn = rec.water || 0;
+    const wc = cards.water;
+    if(wc){
+      const hit = wn >= state.waterTarget;
+      wc.el.classList.toggle("hit", hit);
+      wc.spec.textContent = hit ? "今天够了" : "每次接水点一下";
+      wc.count.innerHTML = "<b>" + wn + "</b> / " + state.waterTarget;
+    }
+
+    /* 散步 */
+    const ws = walksOf(k);
+    if(cards.walk){
+      cards.walk.spec.textContent = ws.length
+        ? "今天 " + ws.length + " 次 · 共 " + walkMin(k) + " 分钟"
+        : "填分钟数 → 点 +";
+    }
 
     const week = $("week");
     week.innerHTML = "";
@@ -328,21 +474,76 @@
       b.classList.toggle("on", +b.dataset.v === state.target));
     document.querySelectorAll("#segAdv button").forEach(b =>
       b.classList.toggle("on", +b.dataset.v === (state.adv ? 1 : 0)));
+    $("waterTarget").value = state.waterTarget;
+    buildCfg();
   }
 
-  function render(){ build(); refresh(); }
+  /* ---------- 参数编辑 ---------- */
+  function buildCfg(){
+    const box = $("cfg");
+    // 只在参数未渲染过时重建，避免输入时丢焦点
+    if(box.childElementCount === activeEx().length) {
+      return;
+    }
+    box.innerHTML = "";
+    activeEx().forEach(e => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const f = document.createElement("span");
+      f.className = "fields";
+      if(e.kind === "reps"){
+        f.innerHTML = '<span class="unit">' + (e.verb||"") +
+                      ' 次数</span><input type="number" min="1" max="99">';
+        const inp = f.querySelector("input");
+        inp.value = state.specs[e.id].reps;
+        inp.addEventListener("change", () => {
+          state.specs[e.id].reps = clamp(inp.value, 1, 99);
+          inp.value = state.specs[e.id].reps;
+          save(); refresh();
+        });
+      }else{
+        f.innerHTML =
+          '<input type="number" min="1" max="120"><span class="unit">秒 ×</span>' +
+          '<input type="number" min="1" max="99">';
+        const [dIn, rIn] = f.querySelectorAll("input");
+        dIn.value = state.specs[e.id].dur;
+        rIn.value = state.specs[e.id].reps;
+        dIn.addEventListener("change", () => {
+          state.specs[e.id].dur = clamp(dIn.value, 1, 120);
+          dIn.value = state.specs[e.id].dur; save(); refresh();
+        });
+        rIn.addEventListener("change", () => {
+          state.specs[e.id].reps = clamp(rIn.value, 1, 99);
+          rIn.value = state.specs[e.id].reps; save(); refresh();
+        });
+      }
+      const lbl = document.createElement("span");
+      lbl.className = "lbl";
+      lbl.textContent = e.name;
+      row.appendChild(lbl);
+      row.appendChild(f);
+      box.appendChild(row);
+    });
+  }
 
+  /* ---------- 操作 ---------- */
   function bump(id, delta){
     const k = todayKey();
     const rec = dayRec(k);
     const v = Math.max(0, (rec[id] || 0) + delta);
     rec[id] = v;
     if(v === 0) delete rec[id];
-    save();
-    refresh();
+    save(); refresh();
     if(delta > 0 && roundsOf(k) >= state.target && !bump._shown){
       bump._shown = true; toast("今天目标完成 ✓");
     }
+  }
+  function water(delta){
+    const rec = dayRec(todayKey());
+    const v = Math.max(0, (rec.water || 0) + delta);
+    rec.water = v;
+    if(v === 0) delete rec.water;
+    save(); refresh();
   }
 
   /* ---------- toast ---------- */
@@ -366,14 +567,15 @@
 
   $("csv").onclick = function(){
     const keys = Object.keys(state.days).sort();
-    const head = ["date"].concat(EX.map(e => e.name)).concat(["完成轮数"]);
+    const head = ["date"].concat(EX.map(e => e.name))
+      .concat(["接水", "散步次数", "散步分钟", "完成轮数"]);
     const lines = [head.join(",")];
     keys.forEach(k => {
       const rec = state.days[k];
       if(!rec || !Object.keys(rec).length) return;
       lines.push([k]
         .concat(EX.map(e => rec[e.id] || 0))
-        .concat([roundsOf(k)])
+        .concat([rec.water || 0, walksOf(k).length, walkMin(k), roundsOf(k)])
         .join(","));
     });
     if(lines.length === 1){ toast("还没有数据"); return; }
@@ -396,11 +598,9 @@
         const data = normalize(JSON.parse(r.result));
         const cur = Object.keys(state.days).length;
         const inc = Object.keys(data.days).length;
-        if(cur && !confirm("导入会覆盖当前 " + cur + " 天的记录（文件里有 " + inc + " 天）。继续？")) return;
-        state = data; save(); render(); toast("已导入 " + inc + " 天");
-      }catch(e){
-        toast("文件格式不对");
-      }
+        if(cur && !confirm("导入会覆盖当前 " + cur + " 天记录（文件里有 " + inc + " 天）。继续？")) return;
+        state = data; builtFor = ""; save(); render(); toast("已导入 " + inc + " 天");
+      }catch(e){ toast("文件格式不对"); }
     };
     r.readAsText(f);
     ev.target.value = "";
@@ -415,20 +615,29 @@
   /* ---------- settings ---------- */
   $("segTarget").onclick = function(ev){
     const b = ev.target.closest("button"); if(!b) return;
-    state.target = +b.dataset.v; save(); render();
+    state.target = +b.dataset.v; builtFor = ""; save(); render();
   };
   $("segAdv").onclick = function(ev){
     const b = ev.target.closest("button"); if(!b) return;
-    state.adv = b.dataset.v === "1"; save(); render();
+    state.adv = b.dataset.v === "1"; builtFor = ""; save(); render();
+  };
+  $("waterTarget").onchange = function(){
+    state.waterTarget = clamp(this.value, 1, 20);
+    this.value = state.waterTarget; builtFor = ""; save(); render();
+  };
+  $("resetSpec").onclick = function(){
+    if(!confirm("把所有动作参数恢复成默认值？")) return;
+    state.specs = defaultSpecs(); builtFor = ""; save(); render(); toast("已恢复默认");
   };
 
   /* ---------- boot ---------- */
+  function render(){ build(); refresh(); }
   render();
-  // 跨天自动刷新
+
   let day = todayKey();
   setInterval(function(){
     const now = todayKey();
-    if(now !== day){ day = now; bump._shown = false; render(); }
+    if(now !== day){ day = now; bump._shown = false; builtFor = ""; render(); }
   }, 30000);
 })();
 </script>
