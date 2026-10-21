@@ -30,6 +30,7 @@
     padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 28px);
     max-width:560px; margin:0 auto;
   }
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
   header{margin-bottom:22px}
   .date{font-size:13px;color:var(--muted);letter-spacing:.02em}
@@ -48,9 +49,10 @@
   .list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .ex{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
-    padding:14px 16px; display:flex; align-items:center; gap:14px;
+    overflow:hidden;
   }
   .ex.hit{border-color:var(--ok)}
+  .row-main{display:flex; align-items:center; gap:14px; padding:14px 16px; cursor:pointer}
   .idx{
     width:26px;height:26px;flex:0 0 26px;border-radius:50%;
     background:var(--accent-soft); color:var(--accent);
@@ -66,7 +68,6 @@
   }
   .count b{color:var(--fg);font-size:17px}
   .btns{display:flex;gap:8px;align-items:center}
-  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
   .plus{
     width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;
     font-size:22px;font-weight:600;display:grid;place-items:center;
@@ -79,21 +80,51 @@
   }
   .minus:active{background:var(--line)}
 
-  /* 另外两件 */
-  .ex.extra .idx{background:var(--accent-soft)}
-  .ex.water .idx{background:rgba(15,155,181,.14);color:var(--water)}
-  .ex.water.hit .idx{background:var(--water);color:#fff}
-  .ex.water.hit{border-color:var(--water)}
+  /* 展开区 */
+  .detail{display:none; padding:0 16px 14px; border-top:1px solid var(--line)}
+  .ex.open .detail{display:block}
+  .rec{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    margin-top:12px;
+  }
+  .rec .unit{font-size:13px;color:var(--dim)}
+  .rec button.go{
+    margin-left:auto; padding:9px 16px; border-radius:10px;
+    background:var(--accent); color:#fff; font-size:14px; font-weight:600;
+  }
+  .rec button.go:active{filter:brightness(.92)}
   input[type=number]{
     font:inherit;font-variant-numeric:tabular-nums;
-    width:58px;padding:9px 8px;text-align:center;
+    width:56px;padding:9px 6px;text-align:center;
     border:1px solid var(--line);border-radius:10px;
     background:var(--bg);color:var(--fg);
     -moz-appearance:textfield;
   }
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  .unit{font-size:13px;color:var(--dim);margin-right:-2px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--bg); border:1px solid var(--line); border-radius:999px;
+    padding:4px 6px 4px 10px; font-size:13px; color:var(--muted);
+    font-variant-numeric:tabular-nums;
+  }
+  .chip b{color:var(--fg);font-weight:600}
+  .chip .x{
+    width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+    color:var(--dim);font-size:15px;line-height:1;
+  }
+  .chip .x:active{background:var(--line)}
+  .empty{font-size:13px;color:var(--dim);margin-top:10px}
+
+  /* 另外两件 */
+  .ex.water .idx{background:rgba(15,155,181,.14);color:var(--water)}
+  .ex.water.hit .idx{background:var(--water);color:#fff}
+  .ex.water.hit{border-color:var(--water)}
+  .ex.extra .idx{background:var(--accent-soft)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{padding:7px 14px;font-size:14px;color:var(--muted)}
+  .seg button.on{background:var(--accent);color:#fff}
 
   .sect{margin-top:26px}
   .sect h2{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 10px;
@@ -122,9 +153,6 @@
   details[open] summary::before{content:"▾ "}
   .set{margin-top:12px;display:flex;flex-direction:column;gap:10px}
   .row{display:flex;align-items:center;justify-content:space-between;font-size:14px;gap:10px}
-  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
-  .seg button{padding:7px 14px;font-size:14px;color:var(--muted)}
-  .seg button.on{background:var(--accent);color:#fff}
   .cfg{margin-top:14px;display:flex;flex-direction:column;gap:8px}
   .cfg .row{font-size:14px}
   .cfg .lbl{color:var(--muted)}
@@ -149,7 +177,6 @@
 <header>
   <div class="date" id="date"></div>
   <h1>工位动作</h1>
-
   <div class="today">
     <span class="num" id="rounds">0</span>
     <span class="of">/ <span id="target">3</span> 轮</span>
@@ -174,7 +201,8 @@
   <section class="sect">
     <h2>数据</h2>
     <div class="data">
-      <button class="primary" id="csv">导出 CSV</button>
+      <button class="primary" id="csv">导出汇总 CSV</button>
+      <button id="csvd">导出明细 CSV</button>
       <button id="json">导出 JSON</button>
       <button id="importBtn">导入 JSON</button>
       <button id="resetDay">清空今天</button>
@@ -189,15 +217,13 @@
       <div class="row">
         <span>每日目标</span>
         <div class="seg" id="segTarget">
-          <button data-v="3">3 轮</button>
-          <button data-v="6">6 轮</button>
+          <button data-v="3">3 轮</button><button data-v="6">6 轮</button>
         </div>
       </div>
       <div class="row">
         <span>显示进阶动作</span>
         <div class="seg" id="segAdv">
-          <button data-v="0">关</button>
-          <button data-v="1">开</button>
+          <button data-v="0">关</button><button data-v="1">开</button>
         </div>
       </div>
       <div class="row">
@@ -210,12 +236,11 @@
     <button class="ghost" id="resetSpec">恢复默认参数</button>
 
     <p class="note">
-      <b>第 1 周</b>：每天 3 轮，只做前 4 个动作。<b>第 2 周</b>：6 轮。
-      <b>第 3 周</b>：打开进阶，加「下巴回收」和「握力等长」。<br><br>
-      一轮 = 四个动作连着做，约 90 秒，不起身、不出汗。<br>
+      <span class="warn">点卡片展开</span>，可以填这一次实际做了多少，再点「记录」——
+      这样每次都能单独记，不一定要按默认值。<br>
+      直接用 <b>+</b> 则按上面的默认参数记一次。<br><br>
+      <b>第 1 周</b>：3 轮，只做前 4 个。<b>第 2 周</b>：6 轮。<b>第 3 周</b>：打开进阶。<br>
       <span class="warn">全程正常呼吸，绝对不要憋气。</span>等长收缩时屏气会使血压瞬间升高。<br><br>
-      接水：每次接水点一下。它也是做一轮动作的触发点。<br>
-      散步：填分钟数再点 <b>+</b>；点错了用 <b>−</b> 撤掉最后一次。<br><br>
       数据只存在这台设备的浏览器里，不上传任何服务器。<br>
       <b>换设备或清理浏览器前，先导出 JSON。</b>
     </p>
@@ -231,9 +256,7 @@
   const KEY = "desk-checkin-v1";
   const WD = ["日","一","二","三","四","五","六"];
 
-  /* ---------- 动作定义 ----------
-     kind:"reps" 只有次数；kind:"hold" 有（秒 × 次数）
-     dur / reps 是可调参数的默认值                          */
+  /* kind:"reps" 只有次数；kind:"hold" 有（秒 × 次数）；dur/reps 是默认值 */
   const EX = [
     {id:"ankle",   name:"踝泵",         kind:"reps", verb:"上勾下压", reps:15},
     {id:"glute",   name:"臀肌收紧",     kind:"hold", dur:5,  reps:3},
@@ -242,40 +265,70 @@
     {id:"chin",    name:"下巴回收",     kind:"hold", dur:5,  reps:5,  adv:true},
     {id:"grip",    name:"握力等长",     kind:"hold", dur:10, reps:3,  adv:true}
   ];
-  const WALK_DEFAULT = 10;
+  const EXMAP = Object.create(null);
+  EX.forEach(e => EXMAP[e.id] = e);
 
-  function defaultSpecs(){
-    const o = {};
-    EX.forEach(e => { o[e.id] = {dur: e.dur, reps: e.reps}; });
-    return o;
-  }
-
-  /* ---------- state ---------- */
-  let mem = null;
-  function normalize(s){
-    s = s && typeof s === "object" ? s : {};
-    const d = defaultSpecs();
-    const specs = {};
-    EX.forEach(e => {
-      const cur = (s.specs && s.specs[e.id]) || {};
-      const dur  = clamp(cur.dur  ?? d[e.id].dur,  1, 120);
-      const reps = clamp(cur.reps ?? d[e.id].reps, 1, 99);
-      specs[e.id] = {dur: (e.kind === "hold" ? dur : null), reps};
-    });
-    return {
-      v: 2,
-      target: s.target === 6 ? 6 : 3,
-      adv: !!s.adv,
-      waterTarget: clamp(s.waterTarget ?? 6, 1, 20),
-      walkDefault: clamp(s.walkDefault ?? WALK_DEFAULT, 1, 180),
-      specs,
-      days: (s.days && typeof s.days === "object") ? s.days : {}
-    };
-  }
   function clamp(v, lo, hi){
     v = Math.round(Number(v));
     if(!isFinite(v)) v = lo;
     return Math.min(hi, Math.max(lo, v));
+  }
+  function defaultSpecs(){
+    const o = {};
+    EX.forEach(e => o[e.id] = {dur: e.kind === "hold" ? e.dur : null, reps: e.reps});
+    return o;
+  }
+  const DEFAULTS = defaultSpecs();
+
+  /* ---------- state ---------- */
+  let mem = null;
+
+  /* 旧数据迁移：数字 → 展开成对应条数的记录 */
+  function migrateDay(rec){
+    const out = {};
+    if(!rec || typeof rec !== "object") return out;
+    EX.forEach(e => {
+      const v = rec[e.id];
+      const d = DEFAULTS[e.id];
+      if(Array.isArray(v)){
+        const arr = v.map(x => ({
+          dur : e.kind === "hold" ? clamp((x && x.dur) ?? d.dur, 1, 600) : null,
+          reps: clamp((x && x.reps) ?? d.reps, 1, 999)
+        }));
+        if(arr.length) out[e.id] = arr;
+      }else if(typeof v === "number" && v > 0){
+        out[e.id] = Array.from({length: Math.min(v, 60)},
+                               () => ({dur: d.dur, reps: d.reps}));
+      }
+    });
+    if(typeof rec.water === "number" && rec.water > 0) out.water = rec.water;
+    if(Array.isArray(rec.walks) && rec.walks.length) out.walks = rec.walks.slice();
+    return out;
+  }
+
+  function normalize(s){
+    s = s && typeof s === "object" ? s : {};
+    const d = DEFAULTS, specs = {};
+    EX.forEach(e => {
+      const cur = (s.specs && s.specs[e.id]) || {};
+      specs[e.id] = {
+        dur : e.kind === "hold" ? clamp(cur.dur ?? d[e.id].dur, 1, 600) : null,
+        reps: clamp(cur.reps ?? d[e.id].reps, 1, 999)
+      };
+    });
+    const days = {};
+    if(s.days && typeof s.days === "object"){
+      Object.keys(s.days).forEach(k => days[k] = migrateDay(s.days[k]));
+    }
+    return {
+      v: 3,
+      target: s.target === 6 ? 6 : 3,
+      adv: !!s.adv,
+      waterTarget: clamp(s.waterTarget ?? 6, 1, 20),
+      walkDefault: clamp(s.walkDefault ?? 10, 1, 180),
+      specs,
+      days
+    };
   }
   function load(){
     try{
@@ -290,7 +343,7 @@
   }
   let state = load();
 
-  /* ---------- date / record ---------- */
+  /* ---------- 日期与记录 ---------- */
   function todayKey(d){
     d = d || new Date();
     const p = n => String(n).padStart(2,"0");
@@ -301,21 +354,27 @@
     return state.days[k];
   }
   function activeEx(){ return EX.filter(e => state.adv || !e.adv); }
-
-  /* 完成轮数 = 所有当前动作的最小次数 */
+  function recordsOf(k, id){
+    const rec = state.days[k];
+    const v = rec && rec[id];
+    return Array.isArray(v) ? v : [];
+  }
+  function countOf(k, id){ return recordsOf(k, id).length; }
   function roundsOf(k){
-    const rec = state.days[k] || {};
     const list = activeEx();
     if(!list.length) return 0;
-    return Math.min.apply(null, list.map(e => rec[e.id] || 0));
+    return Math.min.apply(null, list.map(e => countOf(k, e.id)));
   }
   function walksOf(k){
-    const rec = state.days[k] || {};
-    return Array.isArray(rec.walks) ? rec.walks : [];
+    const rec = state.days[k];
+    return rec && Array.isArray(rec.walks) ? rec.walks : [];
   }
   function walkMin(k){ return walksOf(k).reduce((a,b)=>a+b, 0); }
 
   /* ---------- 文案 ---------- */
+  function fmt(r, e){
+    return e.kind === "reps" ? String(r.reps) : (r.dur + "秒×" + r.reps);
+  }
   function specText(e){
     const sp = state.specs[e.id];
     if(e.kind === "reps") return (e.verb || "") + " ×" + sp.reps;
@@ -326,6 +385,7 @@
   const $ = id => document.getElementById(id);
   const cards = Object.create(null);
   let builtFor = "";
+  const open = Object.create(null);   // 哪些卡片是展开的
 
   function build(){
     const sig = state.target + "|" + (state.adv ? 1 : 0) + "|" + state.waterTarget;
@@ -340,23 +400,98 @@
       const el = document.createElement("div");
       el.className = "ex";
       el.innerHTML =
-        '<span class="idx"></span>' +
-        '<span class="meta"><span class="name"></span><span class="spec"></span></span>' +
-        '<span class="count"></span>' +
-        '<span class="btns">' +
-          '<button class="minus" aria-label="减一">−</button>' +
-          '<button class="plus" aria-label="加一">+</button>' +
-        '</span>';
+        '<div class="row-main">' +
+          '<span class="idx"></span>' +
+          '<span class="meta"><span class="name"></span><span class="spec"></span></span>' +
+          '<span class="count"></span>' +
+          '<span class="btns">' +
+            '<button class="minus" aria-label="撤销最后一次">−</button>' +
+            '<button class="plus" aria-label="按默认参数记一次">+</button>' +
+          '</span>' +
+        '</div>' +
+        '<div class="detail">' +
+          '<div class="rec"></div>' +
+          '<div class="chips"></div>' +
+        '</div>';
+
       el.querySelector(".name").textContent = e.name;
-      el.querySelector(".plus").addEventListener("click", () => bump(e.id, +1));
-      el.querySelector(".minus").addEventListener("click", () => bump(e.id, -1));
+
+      const rowMain = el.querySelector(".row-main");
+      rowMain.addEventListener("click", ev => {
+        if(ev.target.closest("button")) return;
+        open[e.id] = !open[e.id];
+        el.classList.toggle("open", !!open[e.id]);
+        if(open[e.id]) fillRecInputs(e);
+      });
+
+      el.querySelector(".plus").addEventListener("click", ev => {
+        ev.stopPropagation();
+        addRecord(e.id, state.specs[e.id].dur, state.specs[e.id].reps);
+      });
+      el.querySelector(".minus").addEventListener("click", ev => {
+        ev.stopPropagation();
+        popRecord(e.id);
+      });
+
       list.appendChild(el);
-      cards[e.id] = {el, idx: el.querySelector(".idx"),
-                     spec: el.querySelector(".spec"),
-                     count: el.querySelector(".count")};
+      cards[e.id] = {
+        el, idx: el.querySelector(".idx"),
+        spec: el.querySelector(".spec"),
+        count: el.querySelector(".count"),
+        rec: el.querySelector(".rec"),
+        chips: el.querySelector(".chips")
+      };
+      el.classList.toggle("open", !!open[e.id]);
     });
 
     buildExtras();
+  }
+
+  /* 展开区：输入行（预填上一次的值） */
+  function fillRecInputs(e){
+    const c = cards[e.id]; if(!c) return;
+    const box = c.rec;
+    if(box.dataset.ready === e.id) return;
+    box.dataset.ready = e.id;
+
+    const recs = recordsOf(todayKey(), e.id);
+    const last = recs.length ? recs[recs.length-1] : state.specs[e.id];
+
+    box.innerHTML = "";
+    if(e.kind === "hold"){
+      const dIn = document.createElement("input");
+      dIn.type = "number"; dIn.min = 1; dIn.max = 600;
+      dIn.className = "dur"; dIn.value = last.dur ?? state.specs[e.id].dur;
+      const u1 = document.createElement("span");
+      u1.className = "unit"; u1.textContent = "秒";
+      const x = document.createElement("span");
+      x.className = "unit"; x.textContent = "×";
+      const rIn = document.createElement("input");
+      rIn.type = "number"; rIn.min = 1; rIn.max = 999;
+      rIn.className = "reps"; rIn.value = last.reps;
+      const u2 = document.createElement("span");
+      u2.className = "unit"; u2.textContent = "次";
+      box.append(dIn, u1, x, rIn, u2);
+    }else{
+      const rIn = document.createElement("input");
+      rIn.type = "number"; rIn.min = 1; rIn.max = 999;
+      rIn.className = "reps"; rIn.value = last.reps;
+      const u = document.createElement("span");
+      u.className = "unit"; u.textContent = (e.verb || "") + " 次数";
+      box.append(rIn, u);
+    }
+
+    const go = document.createElement("button");
+    go.className = "go"; go.textContent = "记录";
+    go.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const dur  = box.querySelector(".dur");
+      const reps = box.querySelector(".reps");
+      addRecord(e.id,
+        dur ? clamp(dur.value, 1, 600) : null,
+        clamp(reps.value, 1, 999));
+    });
+    box.appendChild(go);
   }
 
   function buildExtras(){
@@ -367,14 +502,15 @@
     const w = document.createElement("div");
     w.className = "ex water";
     w.innerHTML =
-      '<span class="idx">水</span>' +
-      '<span class="meta"><span class="name">接水</span>' +
-        '<span class="spec"></span></span>' +
-      '<span class="count"></span>' +
-      '<span class="btns">' +
-        '<button class="minus" aria-label="减一">−</button>' +
-        '<button class="plus" aria-label="加一">+</button>' +
-      '</span>';
+      '<div class="row-main">' +
+        '<span class="idx">水</span>' +
+        '<span class="meta"><span class="name">接水</span><span class="spec"></span></span>' +
+        '<span class="count"></span>' +
+        '<span class="btns">' +
+          '<button class="minus" aria-label="减一">−</button>' +
+          '<button class="plus" aria-label="加一">+</button>' +
+        '</span>' +
+      '</div>';
     w.querySelector(".plus").addEventListener("click", () => water(+1));
     w.querySelector(".minus").addEventListener("click", () => water(-1));
     box.appendChild(w);
@@ -384,33 +520,36 @@
     const s = document.createElement("div");
     s.className = "ex extra";
     s.innerHTML =
-      '<span class="idx">走</span>' +
-      '<span class="meta"><span class="name">散步</span>' +
-        '<span class="spec"></span></span>' +
-      '<span class="btns">' +
-        '<input type="number" class="mins" inputmode="numeric" min="1" max="180" aria-label="分钟">' +
-        '<span class="unit">分</span>' +
-        '<button class="minus" aria-label="撤销上一次">−</button>' +
-        '<button class="plus" aria-label="记录一次">+</button>' +
-      '</span>';
+      '<div class="row-main">' +
+        '<span class="idx">走</span>' +
+        '<span class="meta"><span class="name">散步</span><span class="spec"></span></span>' +
+        '<span class="btns">' +
+          '<input type="number" class="mins" inputmode="numeric" min="1" max="180" aria-label="分钟">' +
+          '<span class="unit" style="font-size:13px;color:var(--dim)">分</span>' +
+          '<button class="minus" aria-label="撤销上一次">−</button>' +
+          '<button class="plus" aria-label="记录一次">+</button>' +
+        '</span>' +
+      '</div>';
     const inp = s.querySelector(".mins");
     inp.value = state.walkDefault;
-    s.querySelector(".plus").addEventListener("click", () => {
+    s.querySelector(".plus").addEventListener("click", ev => {
+      ev.stopPropagation();
       const v = clamp(inp.value, 1, 180);
-      inp.value = v;
-      state.walkDefault = v;
+      inp.value = v; state.walkDefault = v;
       const rec = dayRec(todayKey());
       if(!Array.isArray(rec.walks)) rec.walks = [];
       rec.walks.push(v);
       save(); refresh(); toast("记下 " + v + " 分钟");
     });
-    s.querySelector(".minus").addEventListener("click", () => {
+    s.querySelector(".minus").addEventListener("click", ev => {
+      ev.stopPropagation();
       const rec = dayRec(todayKey());
       if(!Array.isArray(rec.walks) || !rec.walks.length){ toast("没有可撤销的"); return; }
       const v = rec.walks.pop();
       if(!rec.walks.length) delete rec.walks;
       save(); refresh(); toast("撤销 " + v + " 分钟");
     });
+    inp.addEventListener("click", ev => ev.stopPropagation());
     box.appendChild(s);
     cards.walk = {el: s, spec: s.querySelector(".spec")};
   }
@@ -421,40 +560,56 @@
     $("date").textContent = k + " · 周" + WD[d.getDay()];
     $("target").textContent = state.target;
 
-    const rec = state.days[k] || {};
     const rounds = roundsOf(k);
-    const shown = Math.min(rounds, state.target);
-
-    $("rounds").textContent = shown;
+    $("rounds").textContent = Math.min(rounds, state.target);
     $("barFill").style.width = Math.min(100, rounds / state.target * 100) + "%";
     $("doneMsg").textContent = rounds >= state.target ? "完成 ✓" : "";
 
     activeEx().forEach((e, i) => {
       const c = cards[e.id]; if(!c) return;
-      const n = rec[e.id] || 0;
+      const recs = recordsOf(k, e.id);
+      const n = recs.length;
       const hit = n >= state.target;
       c.el.classList.toggle("hit", hit);
       c.idx.textContent = hit ? "✓" : (i + 1);
       c.spec.textContent = specText(e);
       c.count.innerHTML = "<b>" + n + "</b> / " + state.target;
+
+      /* 记录胶囊 */
+      c.chips.innerHTML = "";
+      if(!recs.length){
+        const p = document.createElement("div");
+        p.className = "empty"; p.textContent = "今天还没有记录";
+        c.chips.appendChild(p);
+      }else{
+        recs.forEach((r, idx) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.innerHTML = '<b>' + fmt(r, e) + '</b>' +
+            '<button class="x" aria-label="删除这条">✕</button>';
+          chip.querySelector(".x").addEventListener("click", ev => {
+            ev.stopPropagation();
+            delRecord(e.id, idx);
+          });
+          c.chips.appendChild(chip);
+        });
+      }
+      if(c.el.classList.contains("open")) fillRecInputs(e);
     });
 
-    /* 接水 */
-    const wn = rec.water || 0;
-    const wc = cards.water;
-    if(wc){
+    const wn = (state.days[k] && state.days[k].water) || 0;
+    if(cards.water){
       const hit = wn >= state.waterTarget;
-      wc.el.classList.toggle("hit", hit);
-      wc.spec.textContent = hit ? "今天够了" : "每次接水点一下";
-      wc.count.innerHTML = "<b>" + wn + "</b> / " + state.waterTarget;
+      cards.water.el.classList.toggle("hit", hit);
+      cards.water.spec.textContent = hit ? "今天够了" : "每次接水点一下";
+      cards.water.count.innerHTML = "<b>" + wn + "</b> / " + state.waterTarget;
     }
 
-    /* 散步 */
     const ws = walksOf(k);
     if(cards.walk){
       cards.walk.spec.textContent = ws.length
         ? "今天 " + ws.length + " 次 · 共 " + walkMin(k) + " 分钟"
-        : "填分钟数 → 点 +";
+        : "填分钟 → +";
     }
 
     const week = $("week");
@@ -478,13 +633,10 @@
     buildCfg();
   }
 
-  /* ---------- 参数编辑 ---------- */
+  /* ---------- 参数编辑（默认值） ---------- */
   function buildCfg(){
     const box = $("cfg");
-    // 只在参数未渲染过时重建，避免输入时丢焦点
-    if(box.childElementCount === activeEx().length) {
-      return;
-    }
+    if(box.childElementCount === activeEx().length) return;
     box.innerHTML = "";
     activeEx().forEach(e => {
       const row = document.createElement("div");
@@ -492,61 +644,71 @@
       const f = document.createElement("span");
       f.className = "fields";
       if(e.kind === "reps"){
-        f.innerHTML = '<span class="unit">' + (e.verb||"") +
-                      ' 次数</span><input type="number" min="1" max="99">';
+        f.innerHTML = '<span class="lbl">' + (e.verb||"") +
+                      ' 次数</span><input type="number" min="1" max="999">';
         const inp = f.querySelector("input");
         inp.value = state.specs[e.id].reps;
         inp.addEventListener("change", () => {
-          state.specs[e.id].reps = clamp(inp.value, 1, 99);
-          inp.value = state.specs[e.id].reps;
-          save(); refresh();
+          state.specs[e.id].reps = clamp(inp.value, 1, 999);
+          inp.value = state.specs[e.id].reps; save(); refresh();
         });
       }else{
         f.innerHTML =
-          '<input type="number" min="1" max="120"><span class="unit">秒 ×</span>' +
-          '<input type="number" min="1" max="99">';
+          '<input type="number" min="1" max="600"><span class="lbl">秒 ×</span>' +
+          '<input type="number" min="1" max="999"><span class="lbl">次</span>';
         const [dIn, rIn] = f.querySelectorAll("input");
-        dIn.value = state.specs[e.id].dur;
-        rIn.value = state.specs[e.id].reps;
+        dIn.value = state.specs[e.id].dur; rIn.value = state.specs[e.id].reps;
         dIn.addEventListener("change", () => {
-          state.specs[e.id].dur = clamp(dIn.value, 1, 120);
+          state.specs[e.id].dur = clamp(dIn.value, 1, 600);
           dIn.value = state.specs[e.id].dur; save(); refresh();
         });
         rIn.addEventListener("change", () => {
-          state.specs[e.id].reps = clamp(rIn.value, 1, 99);
+          state.specs[e.id].reps = clamp(rIn.value, 1, 999);
           rIn.value = state.specs[e.id].reps; save(); refresh();
         });
       }
       const lbl = document.createElement("span");
-      lbl.className = "lbl";
-      lbl.textContent = e.name;
-      row.appendChild(lbl);
-      row.appendChild(f);
+      lbl.className = "lbl"; lbl.textContent = e.name;
+      row.appendChild(lbl); row.appendChild(f);
       box.appendChild(row);
     });
   }
 
   /* ---------- 操作 ---------- */
-  function bump(id, delta){
+  function addRecord(id, dur, reps){
+    const e = EXMAP[id];
     const k = todayKey();
     const rec = dayRec(k);
-    const v = Math.max(0, (rec[id] || 0) + delta);
-    rec[id] = v;
-    if(v === 0) delete rec[id];
+    if(!Array.isArray(rec[id])) rec[id] = [];
+    rec[id].push({dur: e.kind === "hold" ? clamp(dur, 1, 600) : null,
+                  reps: clamp(reps, 1, 999)});
     save(); refresh();
-    if(delta > 0 && roundsOf(k) >= state.target && !bump._shown){
-      bump._shown = true; toast("今天目标完成 ✓");
+    if(roundsOf(k) >= state.target && !addRecord._shown){
+      addRecord._shown = true; toast("今天目标完成 ✓");
     }
+  }
+  function popRecord(id){
+    const rec = state.days[todayKey()];
+    if(!rec || !Array.isArray(rec[id]) || !rec[id].length){ toast("没有可撤销的"); return; }
+    rec[id].pop();
+    if(!rec[id].length) delete rec[id];
+    save(); refresh();
+  }
+  function delRecord(id, idx){
+    const rec = state.days[todayKey()];
+    if(!rec || !Array.isArray(rec[id])) return;
+    rec[id].splice(idx, 1);
+    if(!rec[id].length) delete rec[id];
+    save(); refresh();
   }
   function water(delta){
     const rec = dayRec(todayKey());
-    const v = Math.max(0, (rec.water || 0) + delta);
-    rec.water = v;
-    if(v === 0) delete rec.water;
+    const v = (rec.water || 0) + delta;
+    if(v <= 0) delete rec.water; else rec.water = v;
     save(); refresh();
   }
 
-  /* ---------- toast ---------- */
+  /* ---------- toast / 下载 ---------- */
   let toastTimer;
   function toast(msg){
     const t = $("toast");
@@ -554,8 +716,6 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove("on"), 1800);
   }
-
-  /* ---------- export ---------- */
   function download(name, text, type){
     const blob = new Blob([text], {type: type || "text/plain;charset=utf-8"});
     const url = URL.createObjectURL(blob);
@@ -565,6 +725,7 @@
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
   }
 
+  /* 汇总：一行一天 */
   $("csv").onclick = function(){
     const keys = Object.keys(state.days).sort();
     const head = ["date"].concat(EX.map(e => e.name))
@@ -574,12 +735,34 @@
       const rec = state.days[k];
       if(!rec || !Object.keys(rec).length) return;
       lines.push([k]
-        .concat(EX.map(e => rec[e.id] || 0))
+        .concat(EX.map(e => countOf(k, e.id)))
         .concat([rec.water || 0, walksOf(k).length, walkMin(k), roundsOf(k)])
         .join(","));
     });
     if(lines.length === 1){ toast("还没有数据"); return; }
-    download("工位动作_" + todayKey() + ".csv", "﻿" + lines.join("\n"),
+    download("工位动作_汇总_" + todayKey() + ".csv", "﻿" + lines.join("\n"),
+             "text/csv;charset=utf-8");
+  };
+
+  /* 明细：一行一次记录 */
+  $("csvd").onclick = function(){
+    const lines = ["date,动作,第几次,秒,次数,备注"];
+    Object.keys(state.days).sort().forEach(k => {
+      EX.forEach(e => {
+        recordsOf(k, e.id).forEach((r, i) => {
+          lines.push([k, e.name, i + 1,
+                      e.kind === "hold" ? r.dur : "",
+                      r.reps, ""].join(","));
+        });
+      });
+      walksOf(k).forEach((m, i) => {
+        lines.push([k, "散步", i + 1, "", m, "分钟"].join(","));
+      });
+      const w = state.days[k] && state.days[k].water;
+      if(w) lines.push([k, "接水", 1, "", w, "次"].join(","));
+    });
+    if(lines.length === 1){ toast("还没有数据"); return; }
+    download("工位动作_明细_" + todayKey() + ".csv", "﻿" + lines.join("\n"),
              "text/csv;charset=utf-8");
   };
 
@@ -587,7 +770,6 @@
     download("工位动作_" + todayKey() + ".json",
              JSON.stringify(state, null, 2), "application/json");
   };
-
   $("importBtn").onclick = function(){ $("file").click(); };
   $("file").onchange = function(ev){
     const f = ev.target.files[0];
@@ -605,7 +787,6 @@
     r.readAsText(f);
     ev.target.value = "";
   };
-
   $("resetDay").onclick = function(){
     if(!confirm("清空今天的记录？")) return;
     delete state.days[todayKey()];
@@ -626,8 +807,10 @@
     this.value = state.waterTarget; builtFor = ""; save(); render();
   };
   $("resetSpec").onclick = function(){
-    if(!confirm("把所有动作参数恢复成默认值？")) return;
-    state.specs = defaultSpecs(); builtFor = ""; save(); render(); toast("已恢复默认");
+    if(!confirm("把所有动作的默认参数恢复成默认值？已记录的数据不受影响。")) return;
+    state.specs = defaultSpecs();
+    for(const id in cards){ delete cards[id].rec.dataset.ready; }
+    builtFor = ""; save(); render(); toast("已恢复默认");
   };
 
   /* ---------- boot ---------- */
@@ -637,7 +820,11 @@
   let day = todayKey();
   setInterval(function(){
     const now = todayKey();
-    if(now !== day){ day = now; bump._shown = false; builtFor = ""; render(); }
+    if(now !== day){
+      day = now; addRecord._shown = false; builtFor = "";
+      for(const id in cards){ delete cards[id].rec.dataset.ready; }
+      render();
+    }
   }, 30000);
 })();
 </script>
