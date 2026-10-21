@@ -52,7 +52,7 @@
     overflow:hidden;
   }
   .ex.hit{border-color:var(--ok)}
-  .row-main{display:flex; align-items:center; gap:14px; padding:14px 16px; cursor:pointer}
+  .row-main{display:flex; align-items:center; gap:8px; padding:14px 14px; cursor:pointer}
   .idx{
     width:26px;height:26px;flex:0 0 26px;border-radius:50%;
     background:var(--accent-soft); color:var(--accent);
@@ -60,11 +60,12 @@
   }
   .ex.hit .idx{background:var(--ok);color:#fff}
   .meta{flex:1;min-width:0}
-  .name{display:block;font-weight:600;font-size:15px}
+  .name{display:block;font-weight:600;font-size:15px;white-space:nowrap;
+        overflow:hidden;text-overflow:ellipsis}
   .spec{display:block;font-size:13px;color:var(--muted);margin-top:1px}
   .count{
     font-variant-numeric:tabular-nums; font-size:15px; color:var(--muted);
-    min-width:44px; text-align:right;
+    min-width:38px; text-align:right;
   }
   .count b{color:var(--fg);font-size:17px}
   .btns{display:flex;gap:8px;align-items:center}
@@ -164,6 +165,51 @@
   }
   .note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px}
   .warn{color:var(--warn);font-weight:600}
+  /* 动作详解 */
+  .q{
+    width:24px;height:24px;flex:0 0 24px;border-radius:50%;
+    border:1px solid var(--line); color:var(--muted);
+    font-size:12px;font-weight:700;display:grid;place-items:center;
+  }
+  .q:active{background:var(--line)}
+  .sheet{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .sheet.on{display:flex}
+  .sheet .box{
+    background:var(--card);color:var(--fg);
+    width:100%;max-width:560px;max-height:86vh;overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:18px 18px 0 0;
+    padding:20px 20px calc(env(safe-area-inset-bottom) + 26px);
+    animation:up .2s ease;
+  }
+  @keyframes up{from{transform:translateY(26px);opacity:.5}to{transform:none;opacity:1}}
+  .sheet h3{font-size:18px;margin:0 0 3px;font-weight:650}
+  .sheet .sub{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .sheet h4{font-size:12px;color:var(--muted);margin:18px 0 6px;
+            letter-spacing:.06em;font-weight:600}
+  .sheet p,.sheet li{font-size:15px;line-height:1.72;margin:0}
+  .sheet ol,.sheet ul{margin:0;padding-left:20px}
+  .sheet li{margin-bottom:5px}
+  .sheet .close{
+    float:right;width:32px;height:32px;border-radius:50%;
+    background:var(--bg);color:var(--muted);font-size:16px;
+    display:grid;place-items:center;margin:-6px -6px 0 0;
+  }
+  .sheet .warnbox{
+    margin-top:18px;padding:12px 14px;border-radius:12px;
+    background:rgba(235,104,52,.1);color:var(--warn);
+    font-size:14px;line-height:1.65;
+  }
+  .glinks{display:flex;flex-wrap:wrap;gap:8px}
+  .glinks button{
+    padding:9px 14px;border:1px solid var(--line);border-radius:999px;
+    background:var(--card);font-size:14px;color:var(--fg);
+  }
+  .glinks button:active{background:var(--line)}
+
   .toast{
     position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
     background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:99px;
@@ -210,6 +256,11 @@
     <input type="file" id="file" accept="application/json,.json" hidden>
   </section>
 
+  <section class="sect">
+    <h2>动作详解</h2>
+    <div class="glinks" id="glinks"></div>
+  </section>
+
   <details>
     <summary>设置与说明</summary>
 
@@ -247,6 +298,8 @@
   </details>
 </main>
 
+<div class="sheet" id="sheet"><div class="box"></div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -267,6 +320,121 @@
   ];
   const EXMAP = Object.create(null);
   EX.forEach(e => EXMAP[e.id] = e);
+
+  /* ---------- 动作详解 ---------- */
+  const GUIDE = {
+    ankle: {
+      name: "踝泵",
+      tag: "循环 · 桌下完成",
+      why: "久坐时小腿肌肉几乎不工作，而静脉血回流主要靠它。踝泵就是用小肌群收缩把血「挤」回心脏，所以小腿被叫作第二心脏。",
+      steps: [
+        "坐正，双脚平放在地面",
+        "脚尖尽力向上勾，停 2 秒",
+        "脚尖尽力向下压，停 2 秒",
+        "重复 15 次（双脚同时做也行）"
+      ],
+      cues: [
+        "幅度要大到小腿后侧有牵拉感",
+        "慢——每一下约 4 秒，不是抖脚"
+      ],
+      errors: ["只动脚趾", "幅度太小", "做太快变成抖腿"],
+      see: "完全看不见，一切都在桌子底下",
+      caution: "小腿单侧出现肿痛、发热、发红 → 立即就医，先排除血栓，不要当成拉伤。"
+    },
+    glute: {
+      name: "臀肌收紧",
+      tag: "激活 · 衣服遮挡",
+      why: "久坐让臀大肌长时间处于关闭状态，而它是站姿和走路时最主要的稳定器。它不工作，腰就会代偿。",
+      steps: [
+        "坐直，双脚踩地",
+        "夹紧臀部，像憋住上厕所",
+        "保持 5 秒",
+        "放松 2 秒，做 3 次"
+      ],
+      cues: [
+        "只夹臀部，不要夹大腿",
+        "想象两侧坐骨之间夹住一张纸",
+        "上身保持直立，别前倾"
+      ],
+      errors: ["憋气", "身体前倾", "用大腿内侧代替臀部发力"],
+      see: "完全看不见，衣服挡着",
+      caution: ""
+    },
+    core: {
+      name: "收腹坐直",
+      tag: "核心 · 正常呼吸",
+      why: "腹横肌是躯干的内腰带，负责在动作前先稳住腰椎。久坐时它容易松弛，腰就开始代偿。",
+      steps: [
+        "坐直，骨盆摆正，不要塌腰",
+        "肚脐向脊柱方向轻轻吸",
+        "保持 5 秒，放松",
+        "做 5 次"
+      ],
+      cues: [
+        "用力程度只要三成，是能正常说话的程度",
+        "全程正常呼吸，不要憋气",
+        "肋骨不要上翻"
+      ],
+      errors: ["憋气", "把肚子整个吸进去", "耸肩", "弓背"],
+      see: "看起来只是「这个人坐得挺直」",
+      caution: ""
+    },
+    scapula: {
+      name: "肩胛后缩下沉",
+      tag: "上背 · 幅度 1–2 cm",
+      why: "中下斜方肌和菱形肌是久坐时最不工作的两块肌肉。它们负责把肩胛骨拉回原位；一旦不工作，肩胛骨前移、上背变圆、头也跟着前伸。",
+      steps: [
+        "坐直，双臂自然下垂或放桌上",
+        "两块肩胛骨向中间夹",
+        "同时向下沉，像把肩胛骨放进裤兜",
+        "幅度只有 1–2 cm，保持 5 秒，做 5 次"
+      ],
+      cues: [
+        "是往后加往下，不是耸肩",
+        "幅度小到旁人看不出来",
+        "脖子保持放松"
+      ],
+      errors: ["耸肩（那是上斜方肌在干活）", "挺胸过度", "幅度太大被看见"],
+      see: "完全看不出",
+      caution: ""
+    },
+    chin: {
+      name: "下巴回收",
+      tag: "颈 · 进阶动作",
+      why: "头前伸时颈椎承受的负荷会成倍增加。下巴回收就是把头顶送回肩膀正上方的动作。",
+      steps: [
+        "坐直，眼睛平视前方",
+        "下巴水平向后收，做出双下巴",
+        "保持 5 秒，放松",
+        "做 5 次"
+      ],
+      cues: [
+        "水平往后，不是低头也不是仰头",
+        "后颈有轻微拉伸感就对了"
+      ],
+      errors: ["低头（变成看手机）", "仰头", "用力过猛"],
+      see: "看起来就是「头摆正了」",
+      caution: "出现手臂麻木、刺痛或头晕 → 停止。"
+    },
+    grip: {
+      name: "握力等长",
+      tag: "前臂 · 进阶动作",
+      why: "前臂和握力是上肢最容易被忽略的部分。等长握力训练还有独立于有氧运动的降压效果。",
+      steps: [
+        "手自然放在桌上",
+        "捏住桌沿或椅子扶手",
+        "用六到七成力，保持 10 秒",
+        "放松 5 秒，做 3 次"
+      ],
+      cues: [
+        "正常呼吸，不要咬牙憋气",
+        "肩膀别耸起来"
+      ],
+      errors: ["憋气", "一上来就用全力", "手腕过度弯曲"],
+      see: "手放在桌上，旁人以为你在歇着",
+      caution: "有心血管基础疾病的人，先问医生再做等长握力训练。出现胸闷、头晕立即停止。"
+    }
+  };
 
   function clamp(v, lo, hi){
     v = Math.round(Number(v));
@@ -404,6 +572,7 @@
           '<span class="idx"></span>' +
           '<span class="meta"><span class="name"></span><span class="spec"></span></span>' +
           '<span class="count"></span>' +
+          '<button class="q" aria-label="动作详解">?</button>' +
           '<span class="btns">' +
             '<button class="minus" aria-label="撤销最后一次">−</button>' +
             '<button class="plus" aria-label="按默认参数记一次">+</button>' +
@@ -424,6 +593,10 @@
         if(open[e.id]) fillRecInputs(e);
       });
 
+      el.querySelector(".q").addEventListener("click", ev => {
+        ev.stopPropagation();
+        openGuide(e.id);
+      });
       el.querySelector(".plus").addEventListener("click", ev => {
         ev.stopPropagation();
         addRecord(e.id, state.specs[e.id].dur, state.specs[e.id].reps);
@@ -445,7 +618,66 @@
     });
 
     buildExtras();
+
+    /* 动作详解入口 */
+    const gl = $("glinks");
+    gl.innerHTML = "";
+    EX.forEach(e => {
+      const b = document.createElement("button");
+      b.textContent = e.name;
+      b.addEventListener("click", () => openGuide(e.id));
+      gl.appendChild(b);
+    });
   }
+
+  /* ---------- 详解弹层 ---------- */
+  function openGuide(id){
+    const g = GUIDE[id];
+    if(!g) return;
+    const s = $("sheet");
+    const box = s.querySelector(".box");
+    box.innerHTML =
+      '<button class="close" aria-label="关闭">✕</button>' +
+      '<h3></h3><div class="sub"></div>' +
+      '<h4>为什么做</h4><p class="why"></p>' +
+      '<h4>怎么做</h4><ol class="steps"></ol>' +
+      '<h4>要点</h4><ul class="cues"></ul>' +
+      '<h4>常见错误</h4><ul class="errs"></ul>' +
+      '<h4>可见程度</h4><p class="see"></p>';
+
+    box.querySelector("h3").textContent = g.name;
+    box.querySelector(".sub").textContent =
+      g.tag + " · 默认 " + specText(EXMAP[id]);
+    box.querySelector(".why").textContent = g.why;
+    [["steps", g.steps], ["cues", g.cues], ["errs", g.errors]].forEach(([cls, arr]) => {
+      const ul = box.querySelector("." + cls);
+      arr.forEach(x => {
+        const li = document.createElement("li");
+        li.textContent = x;
+        ul.appendChild(li);
+      });
+    });
+    box.querySelector(".see").textContent = g.see;
+
+    if(g.caution){
+      const w = document.createElement("div");
+      w.className = "warnbox";
+      w.textContent = g.caution;
+      box.appendChild(w);
+    }
+
+    box.querySelector(".close").addEventListener("click", closeGuide);
+    s.classList.add("on");
+    box.scrollTop = 0;
+    document.body.style.overflow = "hidden";
+  }
+  function closeGuide(){
+    $("sheet").classList.remove("on");
+    document.body.style.overflow = "";
+  }
+  $("sheet").addEventListener("click", ev => {
+    if(ev.target.id === "sheet") closeGuide();
+  });
 
   /* 展开区：输入行（预填上一次的值） */
   function fillRecInputs(e){
